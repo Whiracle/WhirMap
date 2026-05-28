@@ -1,0 +1,17 @@
+services:
+  whirmap:
+    build: .
+    container_name: whiracle-whirmap
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    volumes:
+      - ./data:/data
+    cap_add:
+      - NET_RAW
+    environment:
+      DB_PATH: ${DB_PATH:-/data/app.db}
+      FRONTEND_DIST: /app/frontend/dist
+      PING_INTERVAL_SECONDS: ${PING_INTERVAL_SECONDS:-5}
+      DEFAULT_ADMIN_USERNAME: ${DEFAULT_ADMIN_USERNAME:-admin}
+      DEFAULT_ADMIN_PASSWORD: ${DEFAULT_ADMIN_PASSWORD:-admin123}
+    restart: unless-stopped
