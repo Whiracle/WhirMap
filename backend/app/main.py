@@ -34,7 +34,7 @@ from .models import (
 )
 from .security import hash_password, new_session_token, verify_password
 
-app = FastAPI(title="Whiracle WhirMap", version="0.1.0")
+app = FastAPI(title="Whiracle WhirMap", version="0.1.1")
 
 app.add_middleware(
     CORSMiddleware,

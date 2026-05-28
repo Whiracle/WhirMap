@@ -347,7 +347,11 @@ function App() {
     if (response.status === 401) {
       window.localStorage.removeItem(AUTH_STORAGE_KEY);
       setAuth(null);
-      setMessageText('Session expired. Please login again.');
+      setLoginError('Please sign in again.');
+      setMessageText('');
+      setDrawerOpen(false);
+      setNotificationsOpen(false);
+      setNodeModalOpen(false);
       return true;
     }
     return false;
@@ -359,8 +363,8 @@ function App() {
     if (!response.ok) return;
     const data: Group[] = await response.json();
     setGroups(data);
-    if (!newUserGroupIds.length && data.length) setNewUserGroupIds([data[0].id]);
-  }, [authFetch, isAdmin, newUserGroupIds.length]);
+    setNewUserGroupIds((current) => current.length || !data.length ? current : [data[0].id]);
+  }, [authFetch, isAdmin]);
 
   const loadDeviceTypes = useCallback(async () => {
     const response = await authFetch(`${API}/api/device-types`);
@@ -378,6 +382,7 @@ function App() {
   async function login(event: React.FormEvent) {
     event.preventDefault();
     setLoginError('');
+    setMessageText('');
     const response = await fetch(`${API}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -419,12 +424,13 @@ function App() {
   const refreshStatusesOnly = useCallback(async () => {
     if (!auth?.token) return;
     const response = await authFetch(`${API}/api/maps/${currentMapId}`);
+    if (await handleUnauthorized(response)) return;
     if (!response.ok) return;
     const data: MapResponse = await response.json();
     const freshByNodeId = new Map(data.nodes.map((node) => [node.id, node.data]));
 
-    setMapName(data.name);
-    setBreadcrumbs(data.breadcrumbs);
+    // Important: do not update mapName, breadcrumbs, edges, labels, groups or device metadata here.
+    // This function runs in the background, so it must not reset sidebar inputs or modal forms.
     setNodes((currentNodes) => currentNodes.map((node) => {
       const freshData = freshByNodeId.get(node.id);
       if (!freshData) return node;
@@ -436,16 +442,10 @@ function App() {
           ownStatus: freshData.ownStatus,
           latencyMs: freshData.latencyMs,
           lastCheckedAt: freshData.lastCheckedAt,
-          monitorEnabled: freshData.monitorEnabled,
-          childMapId: freshData.childMapId,
-          deviceType: freshData.deviceType,
-          deviceTypeName: freshData.deviceTypeName,
-          deviceIcon: freshData.deviceIcon,
-          groupIds: freshData.groupIds,
         },
       };
     }));
-  }, [auth?.token, authFetch, currentMapId, setNodes]);
+  }, [auth?.token, authFetch, currentMapId, handleUnauthorized, setNodes]);
 
   const loadHistory = useCallback(async (nodeId: string) => {
     const response = await authFetch(`${API}/api/nodes/${nodeId}/history?limit=80`);
@@ -485,19 +485,20 @@ function App() {
     loadHistory(result.nodeId).catch(() => undefined);
   }
 
-  const loadNotifications = useCallback(async (query = '') => {
+  const loadNotifications = useCallback(async (query = '', silent = false) => {
     if (!auth?.token) return;
-    setNotificationLoading(true);
+    if (!silent) setNotificationLoading(true);
     try {
       const response = await authFetch(`${API}/api/notifications?q=${encodeURIComponent(query.trim())}&limit=120`);
+      if (await handleUnauthorized(response)) return;
       if (!response.ok) return;
       const data: NotificationsResponse = await response.json();
       setNotifications(data.items);
       setNotificationTotal(data.total);
     } finally {
-      setNotificationLoading(false);
+      if (!silent) setNotificationLoading(false);
     }
-  }, [auth?.token, authFetch]);
+  }, [auth?.token, authFetch, handleUnauthorized]);
 
   async function deleteNotification(id: number) {
     askConfirmation({
@@ -611,11 +612,11 @@ function App() {
     if (!auth?.token) return;
     const interval = window.setInterval(() => {
       refreshStatusesOnly().catch(() => undefined);
-      loadNotifications().catch(() => undefined);
-      if (selectedNodeId) loadHistory(selectedNodeId).catch(() => undefined);
+      loadNotifications(notificationsOpen ? notificationSearch : '', true).catch(() => undefined);
+      if (nodeModalOpen && selectedNodeId) loadHistory(selectedNodeId).catch(() => undefined);
     }, 5000);
     return () => window.clearInterval(interval);
-  }, [auth?.token, refreshStatusesOnly, selectedNodeId, loadHistory, loadNotifications]);
+  }, [auth?.token, refreshStatusesOnly, selectedNodeId, nodeModalOpen, loadHistory, loadNotifications, notificationsOpen, notificationSearch]);
 
   useEffect(() => {
     if (!auth?.token) return;
@@ -641,12 +642,12 @@ function App() {
         if (selectedNodeId === message.nodeId) {
           loadHistory(message.nodeId).catch(() => undefined);
         }
-        loadNotifications().catch(() => undefined);
+        loadNotifications(notificationsOpen ? notificationSearch : '', true).catch(() => undefined);
       }
     };
     ws.onopen = () => ws.send('hello');
     return () => ws.close();
-  }, [auth?.token, loadHistory, selectedNodeId, setNodes, loadNotifications]);
+  }, [auth?.token, loadHistory, selectedNodeId, setNodes, loadNotifications, notificationsOpen, notificationSearch]);
 
   useEffect(() => {
     if (selectedNodeId) {
