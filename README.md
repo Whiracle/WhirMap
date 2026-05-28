@@ -194,8 +194,6 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 ```
 
-On Windows, use the provided `start-local.bat` only with Python 3.11 or 3.12.
-
 ## Project structure
 
 ```text
