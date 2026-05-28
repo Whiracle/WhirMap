@@ -26,16 +26,11 @@ Whiracle WhirMap is a simple visual network operations board. It is designed for
 
 ## Screenshots
 
-Add screenshots or GIFs before the public release.
-
-Recommended images:
-
-- Main topology map
-- Device modal
-- Status timeline
-- Notifications panel
-- Groups / members menu
-- Search result opening a map path
+<img width="1127" height="652" alt="image" src="https://github.com/user-attachments/assets/ff084052-0f06-4846-98a7-483247057d03" />
+<img width="770" height="525" alt="image" src="https://github.com/user-attachments/assets/342169c3-3c53-4471-95f5-45e9525c9ee5" />
+<img width="1127" height="651" alt="image" src="https://github.com/user-attachments/assets/a8285df1-3e96-42d0-9491-d64741013930" />
+<img width="1127" height="653" alt="image" src="https://github.com/user-attachments/assets/1f60b0bb-ea76-4790-92ab-6b6a79c0d6e7" />
+<img width="1127" height="653" alt="image" src="https://github.com/user-attachments/assets/a7a351bb-fe91-4d38-8cd2-3fdc160efe7b" />
 
 ## Quick start
 
